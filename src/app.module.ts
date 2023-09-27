@@ -8,6 +8,7 @@ import { User } from './users/entities/user.entity';
 import { UsersModule } from './users/users.module';
 import { JwtModule } from './jwt/jwt.module';
 import { JwtMiddleware } from './jwt/jwt.middleware';
+import { ApolloDriver } from '@nestjs/apollo';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { JwtMiddleware } from './jwt/jwt.middleware';
       entities: [Podcast, Episode, User],
     }),
     GraphQLModule.forRoot({
+      driver: ApolloDriver,
       autoSchemaFile: true,
       context: ({ req }) => {
         return { user: req['user'] };
