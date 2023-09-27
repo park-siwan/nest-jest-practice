@@ -12,30 +12,30 @@ import { AuthGuard } from '../auth/auth.guard';
 import { UserProfileInput, UserProfileOutput } from './dtos/user-profile.dto';
 import { EditProfileInput, EditProfileOutput } from './dtos/edit-profile.dto';
 
-@Resolver(of => User)
+@Resolver((of) => User)
 export class UsersResolver {
   constructor(private readonly usersService: UsersService) {}
 
-  @Mutation(returns => CreateAccountOutput)
+  @Mutation((returns) => CreateAccountOutput)
   createAccount(
     @Args('input') createAccountInput: CreateAccountInput,
   ): Promise<CreateAccountOutput> {
     return this.usersService.createAccount(createAccountInput);
   }
 
-  @Mutation(returns => LoginOutput)
+  @Mutation((returns) => LoginOutput)
   login(@Args('input') loginInpt: LoginInput): Promise<LoginOutput> {
     return this.usersService.login(loginInpt);
   }
 
   @UseGuards(AuthGuard)
-  @Query(returns => User)
+  @Query((returns) => User)
   me(@AuthUser() authUser: User): User {
     return authUser;
   }
 
   @UseGuards(AuthGuard)
-  @Query(returns => UserProfileOutput)
+  @Query((returns) => UserProfileOutput)
   seeProfile(
     @Args() userProfileInput: UserProfileInput,
   ): Promise<UserProfileOutput> {
@@ -43,7 +43,7 @@ export class UsersResolver {
   }
 
   @UseGuards(AuthGuard)
-  @Mutation(returns => EditProfileOutput)
+  @Mutation((returns) => EditProfileOutput)
   editProfile(
     @AuthUser() authUser: User,
     @Args('input') editProfileInput: EditProfileInput,
