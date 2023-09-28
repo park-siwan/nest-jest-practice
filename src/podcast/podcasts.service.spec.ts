@@ -15,12 +15,32 @@ const mockRepository = () => ({
 });
 const ID = 1;
 // 모의 데이터
+
 const mockPodcast = {
   id: ID,
+  createdAt: new Date(),
+  updatedAt: new Date(),
   title: 'Podcast 1',
   category: 'a',
   rating: 1,
-  episodes: [],
+  episodes: [
+    {
+      id: ID,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      title: 'title',
+      category: 'category',
+      podcast: {
+        id: ID,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        title: 'Podcast 1',
+        category: 'a',
+        rating: 1,
+        episodes: [],
+      },
+    },
+  ],
 };
 const mockPodcastPayload = {
   title: 'Podcast 1',
@@ -214,9 +234,32 @@ describe('PodcastService', () => {
       expect(result).toEqual(InternalServerErrorOutput);
     });
   });
-  // episodeRepository
+
   describe('getEpisodes', () => {
-    it('');
+    it('should fail if podcast exist', async () => {
+      jest
+        .spyOn(service, 'getPodcast')
+        .mockResolvedValue({ ok: false, error: 'Podcast Not Found' });
+      const result = await service.getEpisodes(1);
+      expect(result).toEqual({ ok: false, error: 'Podcast Not Found' });
+    });
+
+    it('should return all episodes', async () => {
+      jest
+        .spyOn(service, 'getPodcast')
+        .mockResolvedValue({ podcast: mockPodcast, ok: true, error: null });
+      const result = await service.getEpisodes(1);
+      expect(result).toEqual({
+        ok: true,
+        episodes: mockPodcast.episodes,
+      });
+    });
+
+    it('should return error on exception', async () => {
+      jest.spyOn(service, 'getPodcast').mockRejectedValue(new Error());
+      const result = await service.getEpisodes(1);
+      expect(result).toEqual(InternalServerErrorOutput);
+    });
   });
   it.todo('getEpisode');
   it.todo('createEpisode');
