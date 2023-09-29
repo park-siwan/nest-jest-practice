@@ -187,6 +187,4 @@ describe('UsersService', () => {
       });
     });
   });
-
-  it.todo('editProfile');
 });
