@@ -13,11 +13,13 @@ const mockRepository = () => ({
   findOneOrFail: jest.fn(),
   delete: jest.fn(),
 });
-const ID = 1;
+const podcastId = 1;
+const episodeId = 1;
+const mismatchedId = 999;
 // 모의 데이터
 
 const mockPodcast = {
-  id: ID,
+  id: podcastId,
   createdAt: new Date(),
   updatedAt: new Date(),
   title: 'Podcast 1',
@@ -25,13 +27,13 @@ const mockPodcast = {
   rating: 1,
   episodes: [
     {
-      id: ID,
+      id: episodeId,
       createdAt: new Date(),
       updatedAt: new Date(),
       title: 'title',
       category: 'category',
       podcast: {
-        id: ID,
+        id: podcastId,
         createdAt: new Date(),
         updatedAt: new Date(),
         title: 'Podcast 1',
@@ -134,22 +136,22 @@ describe('PodcastService', () => {
   describe('getPodcast', () => {
     it('should fail if podcast not exist', async () => {
       podCastRepository.findOne.mockResolvedValue(null);
-      const result = await service.getPodcast(ID);
+      const result = await service.getPodcast(podcastId);
       expect(result).toEqual({
         ok: false,
-        error: `Podcast with id ${ID} not found`,
+        error: `Podcast with id ${podcastId} not found`,
       });
     });
 
     it('should find an existing podcast', async () => {
       podCastRepository.findOne.mockResolvedValue(mockPodcast);
-      const result = await service.getPodcast(ID);
+      const result = await service.getPodcast(podcastId);
       expect(result).toEqual(foundPodcast);
     });
 
     it('should fail on exception', async () => {
       podCastRepository.findOne.mockRejectedValue(new Error());
-      const result = await service.getPodcast(ID);
+      const result = await service.getPodcast(podcastId);
       expect(result).toEqual(InternalServerErrorOutput);
     });
   });
@@ -157,23 +159,23 @@ describe('PodcastService', () => {
   describe('deletePodcast', () => {
     it('should fail if podcast not exist', async () => {
       podCastRepository.findOne.mockResolvedValue(null);
-      const result = await service.deletePodcast(ID);
+      const result = await service.deletePodcast(podcastId);
       expect(result).toEqual({
         ok: false,
-        error: `Podcast with id ${ID} not found`,
+        error: `Podcast with id ${podcastId} not found`,
       });
     });
 
     it('should delete a podcast', async () => {
       podCastRepository.findOne.mockResolvedValue(foundPodcast);
-      const result = await service.deletePodcast(ID);
+      const result = await service.deletePodcast(podcastId);
       expect(result).toEqual({ ok: true });
     });
 
     it('should fail on exception', async () => {
       podCastRepository.findOne.mockResolvedValue(new Error());
       podCastRepository.delete.mockRejectedValue(new Error());
-      const result = await service.deletePodcast(ID);
+      const result = await service.deletePodcast(podcastId);
       expect(result).toEqual(InternalServerErrorOutput);
     });
   });
@@ -182,12 +184,12 @@ describe('PodcastService', () => {
     it('should fail if podcast not exist', async () => {
       podCastRepository.findOne.mockResolvedValue(null);
       const result = await service.updatePodcast({
-        id: ID,
+        id: podcastId,
         payload: mockPodcastPayload,
       });
       expect(result).toEqual({
         ok: false,
-        error: `Podcast with id ${ID} not found`,
+        error: `Podcast with id ${podcastId} not found`,
       });
     });
     const RatingError = {
@@ -197,7 +199,7 @@ describe('PodcastService', () => {
     it('should return error if rating is less than 1', async () => {
       podCastRepository.findOne.mockResolvedValue(mockPodcast);
       const result = await service.updatePodcast({
-        id: ID,
+        id: podcastId,
         payload: { ...mockPodcastPayload, rating: 0 },
       });
       expect(result).toEqual(RatingError);
@@ -206,7 +208,7 @@ describe('PodcastService', () => {
     it('should return error if rating is greater than 5', async () => {
       podCastRepository.findOne.mockResolvedValue(mockPodcast);
       const result = await service.updatePodcast({
-        id: ID,
+        id: podcastId,
         payload: { ...mockPodcastPayload, rating: 6 },
       });
       expect(result).toEqual(RatingError);
@@ -216,7 +218,7 @@ describe('PodcastService', () => {
       podCastRepository.findOne.mockResolvedValue(mockPodcast);
 
       const result = await service.updatePodcast({
-        id: ID,
+        id: podcastId,
         payload: mockPodcastPayload,
       });
       expect(podCastRepository.save).toHaveBeenCalledTimes(1);
@@ -228,7 +230,7 @@ describe('PodcastService', () => {
       podCastRepository.findOne.mockResolvedValue(new Error());
       podCastRepository.save.mockRejectedValue(new Error());
       const result = await service.updatePodcast({
-        id: ID,
+        id: podcastId,
         payload: mockPodcastPayload,
       });
       expect(result).toEqual(InternalServerErrorOutput);
@@ -261,8 +263,163 @@ describe('PodcastService', () => {
       expect(result).toEqual(InternalServerErrorOutput);
     });
   });
-  it.todo('getEpisode');
-  it.todo('createEpisode');
-  it.todo('deleteEpisode');
-  it.todo('updateEpisode');
+  describe('getEpisode', () => {
+    it('should return error if podcast is not found', async () => {
+      jest.spyOn(service, 'getEpisodes').mockResolvedValue({
+        episodes: null,
+        ok: false,
+        error: `Podcast with id ${podcastId} not found`,
+      });
+      const result = await service.getEpisode({ podcastId, episodeId });
+      expect(result).toEqual({
+        ok: false,
+        error: `Podcast with id ${podcastId} not found`,
+      });
+    });
+
+    it('should return error if episode is not found', async () => {
+      jest.spyOn(service, 'getEpisodes').mockResolvedValue({
+        ok: true,
+        episodes: mockPodcast.episodes,
+      });
+      const result = await service.getEpisode({
+        podcastId,
+        episodeId: mismatchedId,
+      });
+      expect(result).toEqual({
+        ok: false,
+        error: `Episode with id ${mismatchedId} not found in podcast with id ${podcastId}`,
+      });
+    });
+
+    it('should return an episode if found', async () => {
+      jest.spyOn(service, 'getEpisodes').mockResolvedValue({
+        ok: true,
+        episodes: mockPodcast.episodes,
+      });
+      const result = await service.getEpisode({ podcastId, episodeId });
+      expect(result).toEqual({ ok: true, episode: mockPodcast.episodes[0] });
+    });
+
+    it('should return internal server error on exception', async () => {
+      jest.spyOn(service, 'getEpisodes').mockRejectedValue(new Error());
+      const result = await service.getEpisode({ podcastId, episodeId });
+      expect(result).toEqual(InternalServerErrorOutput);
+    });
+  });
+
+  describe('createEpisode', () => {
+    const input = {
+      podcastId,
+      title: 'abc',
+      category: 'def',
+    };
+    it('should return error if podcast is not found', async () => {
+      jest.spyOn(service, 'getPodcast').mockResolvedValue({
+        ok: false,
+        error: `Podcast with id ${podcastId} not found`,
+      });
+      const result = await service.createEpisode(input);
+      expect(result).toEqual({
+        ok: false,
+        error: `Podcast with id ${podcastId} not found`,
+      });
+    });
+
+    it('should create a new podcast', async () => {
+      jest.spyOn(service, 'getPodcast').mockResolvedValue({
+        ok: true,
+        podcast: mockPodcast,
+      });
+
+      episodeRepository.create.mockReturnValue(mockPodcast.episodes[0]);
+      episodeRepository.save.mockResolvedValue({ id: 1 });
+
+      const result = await service.createEpisode(input);
+      expect(result).toEqual({
+        ok: true,
+        id: 1,
+      });
+    });
+
+    it('should return internal server error on exception', async () => {
+      jest.spyOn(service, 'getPodcast').mockResolvedValue({
+        ok: true,
+        podcast: mockPodcast,
+      });
+      episodeRepository.save.mockRejectedValue(new Error());
+      const result = await service.createEpisode(input);
+      expect(result).toEqual(InternalServerErrorOutput);
+    });
+  });
+  describe('deleteEpisode', () => {
+    const input = {
+      podcastId,
+      episodeId,
+    };
+    it('should return error if episode is not found', async () => {
+      jest.spyOn(service, 'getEpisode').mockResolvedValue({
+        ok: false,
+        error: `episode with id ${episodeId} not found`,
+      });
+      const result = await service.deleteEpisode(input);
+      expect(result).toEqual({
+        ok: false,
+        error: `episode with id ${episodeId} not found`,
+      });
+    });
+
+    it('should delete an episode', async () => {
+      jest.spyOn(service, 'getEpisode').mockResolvedValue({
+        ok: true,
+        episode: mockPodcast.episodes[0],
+      });
+      const result = await service.deleteEpisode(input);
+      expect(result).toEqual({ ok: true });
+    });
+
+    it('should return internal server error on exception', async () => {
+      jest.spyOn(service, 'getEpisode').mockResolvedValue({
+        ok: true,
+        episode: mockPodcast.episodes[0],
+      });
+      episodeRepository.delete.mockRejectedValue(new Error());
+      const result = await service.deleteEpisode(input);
+      expect(result).toEqual(InternalServerErrorOutput);
+    });
+  });
+
+  describe('updateEpisode', () => {
+    const input = { podcastId, episodeId, title: 'abc', category: 'def' };
+    it('should return if podcast is not found', async () => {
+      jest.spyOn(service, 'getEpisode').mockResolvedValue({
+        ok: false,
+        error: `episode with id ${episodeId} not found`,
+      });
+      const result = await service.updateEpisode(input);
+      expect(result).toEqual({
+        ok: false,
+        error: `episode with id ${episodeId} not found`,
+      });
+    });
+
+    it('should return if podcast is not found', async () => {
+      jest
+        .spyOn(service, 'getEpisode')
+        .mockResolvedValue({ ok: true, episode: mockPodcast.episodes[0] });
+      const result = await service.updateEpisode(input);
+      episodeRepository.save.mockResolvedValue({ ok: true });
+      expect(result).toEqual({ ok: true });
+    });
+
+    it('should return internal server error on exception', async () => {
+      jest.spyOn(service, 'getEpisode').mockResolvedValue({
+        ok: true,
+        episode: mockPodcast.episodes[0],
+      });
+      episodeRepository.save.mockRejectedValue(new Error());
+      const result = await service.updateEpisode(input);
+      expect(result).toEqual(InternalServerErrorOutput);
+    });
+  });
 });
